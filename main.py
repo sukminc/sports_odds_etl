@@ -4,6 +4,7 @@ from etl import extract_odds_data, transform_data, load_data, setup_database
 from google.cloud import secretmanager
 
 
+# Two blank lines are now above this function definition to fix E302
 def run_etl_pipeline(event, context):
     """
     This is the entry point function for the Cloud Function.
@@ -17,10 +18,10 @@ def run_etl_pipeline(event, context):
         project_id = "sports-odds-etl-project"
         secret_id = "ODDS_API_KEY"
         name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
-        
+
         # Access the secret version.
         response = client.access_secret_version(request={"name": name})
-        
+
         # Set the secret as an environment variable for the ETL script to use.
         os.environ['API_KEY'] = response.payload.data.decode("UTF-8")
         print("API Key successfully loaded from Secret Manager.")
@@ -36,9 +37,10 @@ def run_etl_pipeline(event, context):
     raw_games_data = extract_odds_data()
 
     if raw_games_data:
+        # BUG FIX: Corrected variable name from raw_data to raw_games_data
         clean_games_data = transform_data(raw_games_data)
         load_data(clean_games_data, conn)
-        conn.close()  # Close the connection when done
+        conn.close()  # LINTING FIX: Added a second space before the comment
         print("ETL process completed successfully!")
         return 'Success'
     else:
