@@ -1,15 +1,20 @@
 # main.py
-from etl import extract_odds_data
+from etl import extract_odds_data, transform_data, load_data, setup_database
 
 if __name__ == "__main__":
-    games_data = extract_odds_data()
+    # 1. Ensure the database and table exist
+    setup_database()
+    
+    # 2. EXTRACT raw data from the API
+    raw_games_data = extract_odds_data()
 
-    if games_data:
-        print(f"Successfully fetched {len(games_data)} upcoming games.")
-        # Print the details of the first game to see the structure
-        if len(games_data) > 0:
-            print("\n--- Example Game Data ---")
-            print(games_data[0])
-            print("-------------------------\n")
+    if raw_games_data:
+        # 3. TRANSFORM the data into a clean format
+        clean_games_data = transform_data(raw_games_data)
+        
+        # 4. LOAD the clean data into our database
+        load_data(clean_games_data)
+        
+        print("\nETL process completed successfully!")
     else:
-        print("Could not fetch game data.")
+        print("ETL process failed: No data extracted.")
