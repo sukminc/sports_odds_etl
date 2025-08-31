@@ -80,5 +80,5 @@ Cloud Execution
 The pipeline is deployed as an HTTP-triggered Google Cloud Function. To run the live version, send a POST request to its trigger URL.
 
 ```
-curl -X POST [Your Cloud Function URL]
+curl -X POST https://us-central1-sports-odds-etl-project.cloudfunctions.net/run-etl-pipeline
 ```
