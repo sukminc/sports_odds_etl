@@ -1,12 +1,6 @@
-# Virtual environment
+.DS_Store
 venv/
 
-# Python cache
-__pycache__/
-*.pyc
-
-# Environment variables
 .env
-
-# Database files
-*.db
+__pycache__/
+odds.db
