@@ -1,12 +1,12 @@
 # local_runner.py
 from main import run_etl_pipeline
 import os
+from dotenv import load_dotenv
 
 # --- IMPORTANT ---
 # This local runner needs to load the .env file because it's not
 # running in the cloud context where the environment variable is set.
 print("Loading environment variables from .env file for local run...")
-from dotenv import load_dotenv
 load_dotenv()
 
 # We need to manually set the API_KEY environment variable for the ETL script to find.
