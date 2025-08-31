@@ -1,7 +1,8 @@
 # etl.py
 import os
 import requests
-import sqlite3
+import csv
+import io
 from dotenv import load_dotenv
 
 # --- CONSTANTS ---
@@ -30,8 +31,6 @@ def extract_odds_data():
     return []
 
 
-# In etl.py
-
 def transform_data(raw_data):
     """
     Transforms raw API data, separating valid records from skipped ones.
@@ -42,21 +41,18 @@ def transform_data(raw_data):
                - A list of raw game data that was skipped due to validation issues.
     """
     clean_games = []
-    skipped_games = []  # New list to track skipped records
+    skipped_games = []
 
     for game in raw_data:
-        # Find the odds from our preferred bookmaker
         bookmaker_odds = next(
             (book for book in game['bookmakers'] if book['key'] == BOOKMAKER),
             None
         )
 
-        # If bookmaker isn't found, the record is invalid for our purposes
         if not bookmaker_odds:
             skipped_games.append(game)
-            continue  # Skip to the next game
+            continue
 
-        # Find home and away team prices
         outcomes = bookmaker_odds['markets'][0]['outcomes']
         home_price = next(
             (m['price'] for m in outcomes if m['name'] == game['home_team']),
@@ -67,7 +63,6 @@ def transform_data(raw_data):
             None
         )
 
-        # If both prices are found, the record is clean
         if home_price and away_price:
             clean_games.append({
                 'id': game['id'],
@@ -77,51 +72,38 @@ def transform_data(raw_data):
                 'home_team_odds': home_price,
                 'away_team_odds': away_price
             })
-        # Otherwise, the record is incomplete and should be skipped
         else:
             skipped_games.append(game)
 
     return clean_games, skipped_games
 
 
-def setup_database():
-    """Creates the game_odds table if it doesn't exist and returns a connection."""
-    conn = sqlite3.connect(":memory:")  # Use an in-memory DB for simplicity
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS game_odds (
-            id TEXT PRIMARY KEY,
-            home_team TEXT NOT NULL,
-            away_team TEXT NOT NULL,
-            commence_time TEXT NOT NULL,
-            home_team_odds REAL NOT NULL,
-            away_team_odds REAL NOT NULL,
-            last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    print("In-memory database setup complete.")
-    return conn
+def load_data_to_csv_string(transformed_data):
+    """
+    Takes a list of dictionaries and converts it into a CSV formatted string.
 
-
-def load_data(transformed_data, conn):  # Corrected function name
-    """Loads the transformed game odds into the given database connection."""
+    Returns:
+        str: A string containing the data in CSV format, or None if no data.
+    """
     if not transformed_data:
-        print("No data to load.")
-        return
+        print("No transformed data to format.")
+        return None
 
-    cursor = conn.cursor()
+    # Use io.StringIO to create an in-memory text file
+    output = io.StringIO()
 
-    for game in transformed_data:
-        cursor.execute('''
-            INSERT OR IGNORE INTO game_odds (
-                id, home_team, away_team, commence_time,
-                home_team_odds, away_team_odds
-            ) VALUES (?, ?, ?, ?, ?, ?)
-        ''', (
-            game['id'], game['home_team'], game['away_team'],
-            game['commence_time'], game['home_team_odds'],
-            game['away_team_odds']
-        ))
+    # Define the headers based on the dictionary keys
+    headers = [
+        'id', 'home_team', 'away_team', 'commence_time',
+        'home_team_odds', 'away_team_odds'
+    ]
+    writer = csv.DictWriter(output, fieldnames=headers)
 
-    conn.commit()
-    print(f"Successfully loaded or ignored {len(transformed_data)} records.")
+    # Write the header and the rows to our in-memory file
+    writer.writeheader()
+    writer.writerows(transformed_data)
+
+    print(f"Successfully formatted {len(transformed_data)} records into a CSV string.")
+
+    # Get the string value from the in-memory file
+    return output.getvalue()
