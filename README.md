@@ -37,10 +37,10 @@ Follow these steps to run the project locally.
 
 **1. Clone the repository:**
 ```bash
-git clone [Your GitHub Repository URL]
+git clone https://github.com/sukminc/sports_odds_etl
 cd sports_odds_etl
 ```
-2. Create and activate a virtual environment:
+**2. Create and activate a virtual environment:**
 
 ```bash
 # For MacOS/Linux
@@ -51,19 +51,21 @@ source venv/bin/activate
 python -m venv venv
 .\venv\Scripts\activate
 ```
-3. Install the required dependencies:
+**3. Install the required dependencies:**
 
-```
+```bash
 pip install -r requirements.txt
 ```
-4. Set up your environment variables:
+**4. Set up your environment variables:**
 Create a file named .env in the root of the project directory and add your API key from The Odds API:
-
+```bash
 API_KEY=your_actual_api_key_here
-Usage
+```
+**Usage**
+
 To run the entire ETL pipeline, execute the main.py script from the root directory:
 
-```
+```bash
 python main.py
 ```
 After running, a odds.db file will be created (or updated) in the project directory containing the latest odds.
