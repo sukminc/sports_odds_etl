@@ -30,17 +30,33 @@ def extract_odds_data():
     return []
 
 
+# In etl.py
+
 def transform_data(raw_data):
-    """Transforms the raw API data into a clean list of game odds."""
-    transformed_games = []
+    """
+    Transforms raw API data, separating valid records from skipped ones.
+
+    Returns:
+        tuple: A tuple containing two lists:
+               - A list of clean game odds dictionaries (to be loaded).
+               - A list of raw game data that was skipped due to validation issues.
+    """
+    clean_games = []
+    skipped_games = []  # New list to track skipped records
+
     for game in raw_data:
+        # Find the odds from our preferred bookmaker
         bookmaker_odds = next(
             (book for book in game['bookmakers'] if book['key'] == BOOKMAKER),
             None
         )
-        if not bookmaker_odds:
-            continue
 
+        # If bookmaker isn't found, the record is invalid for our purposes
+        if not bookmaker_odds:
+            skipped_games.append(game)
+            continue  # Skip to the next game
+
+        # Find home and away team prices
         outcomes = bookmaker_odds['markets'][0]['outcomes']
         home_price = next(
             (m['price'] for m in outcomes if m['name'] == game['home_team']),
@@ -51,8 +67,9 @@ def transform_data(raw_data):
             None
         )
 
+        # If both prices are found, the record is clean
         if home_price and away_price:
-            transformed_games.append({
+            clean_games.append({
                 'id': game['id'],
                 'home_team': game['home_team'],
                 'away_team': game['away_team'],
@@ -60,12 +77,16 @@ def transform_data(raw_data):
                 'home_team_odds': home_price,
                 'away_team_odds': away_price
             })
-    return transformed_games
+        # Otherwise, the record is incomplete and should be skipped
+        else:
+            skipped_games.append(game)
+
+    return clean_games, skipped_games
 
 
 def setup_database():
     """Creates the game_odds table if it doesn't exist and returns a connection."""
-    conn = sqlite3.connect(":memory:") # Use an in-memory DB for simplicity
+    conn = sqlite3.connect(":memory:")  # Use an in-memory DB for simplicity
     conn.execute('''
         CREATE TABLE IF NOT EXISTS game_odds (
             id TEXT PRIMARY KEY,
@@ -82,7 +103,7 @@ def setup_database():
     return conn
 
 
-def load_data(transformed_data, conn): # Corrected function name
+def load_data(transformed_data, conn):  # Corrected function name
     """Loads the transformed game odds into the given database connection."""
     if not transformed_data:
         print("No data to load.")
