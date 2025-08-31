@@ -1,4 +1,3 @@
-Markdown
 # NFL Sports Odds ETL Pipeline
 
 ## Description
